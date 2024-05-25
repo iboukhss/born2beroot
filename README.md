@@ -4,11 +4,11 @@
 
 - [ ] SSH service on port 4242 (disable root access)
 - [ ] Configure UFW to leave only port 4242 open
-- [ ] Set hostname to `iboukhss42`
+- [x] Set hostname to `iboukhss42`
 - [ ] Implement strong password policy (see below)
 - [ ] Install sudo following strict rules (see below)
-- [ ] Create user `iboukhss`
-- [ ] Add `iboukhss` to `user42` and `sudo` groups
+- [x] Create user `iboukhss`
+- [x] Add `iboukhss` to `user42` and `sudo` groups
 - [ ] Create `monitoring.sh` script (see below)
 - [ ] Turn in `signature.txt` (see below)
 
@@ -50,17 +50,64 @@ Your script must always be able to display the following information:
 - The IPv4 address of your server and its MAC (Media Access Control) address.
 - The number of commands executed with the sudo program.
 
-## :receipt: Signature file
+## :memo: Signature file
 
-You only have to turn in a signature.txt file at the root of your Git repository. You must paste in it the signature of your machine’s virtual disk. To get this signature, you first have to open the default installation folder (it is the folder where your VMs are saved):
+You only have to turn in a `signature.txt` file at the root of your Git repository. You must paste in it the signature of your machine’s virtual disk. To get this signature, you first have to open the default installation folder (it is the folder where your VMs are saved):
 - Windows: `HOMEDRIVE%%HOMEPATH%\VirtualBox VMs\`
 - Linux: `/VirtualBox VMs/`
 - MacM1: `/Library/Containers/com.utmapp.UTM/Data/Documents/`
 - MacOS: `/VirtualBox VMs/`
 
-Then, retrieve the signature from the ".vdi" file (or ".qcow2 for UTM’users) of your virtual machine in sha1 format. Below are 4 command examples for a rocky_serv.vdi
-file:
+Then, retrieve the signature from the ".vdi" file (or ".qcow2 for UTM’users) of your virtual machine in sha1 format. Below are 4 command examples for a `rocky_serv.vdi` file:
 - Windows: `certUtil -hashfile rocky_serv.vdi sha1`
 - Linux: `sha1sum rocky_serv.vdi`
 - For Mac M1: `shasum rocky.utm/Images/disk-0.qcow2`
 - MacOS: `shasum rocky_serv.vdi`
+
+## Installation steps
+
+- Get the latest [Debian stable ISO](https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso)
+- Set hostname, username, strong passwords
+- Setup LVM (guided partitioning with encryption)
+- Uncheck GUI packages, keep web server, ssh server and system utilities
+
+## Post installation steps
+
+### Sudo
+
+```console
+apt install sudo
+groupadd user42
+usermod -aG sudo,user42 iboukhss
+```
+
+For more info read `man 5 sudoers`
+```console
+visudo
+
+# This is default
+Defaults	passwd_tries=3
+Defaults	badpass_messaage="hehe xd"
+Defaults	log_input,log_output
+# How to force this?
+Defaults	logfile="/var/log/sudo/sudo.log"
+Defaults	requiretty
+```
+
+### Password policy
+
+For more info read `man 5 login.defs`
+```console
+nano /etc/login.defs
+
+PASS_MAX_DAYS	30
+PASS_MIN_DAYS	2
+PASS_WARN_AGE	7
+```
+
+For more info read `man 7 pam`
+
+
+
+## During defense
+
