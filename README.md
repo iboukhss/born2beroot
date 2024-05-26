@@ -5,8 +5,8 @@
 - [ ] SSH service on port 4242 (disable root access)
 - [ ] Configure UFW to leave only port 4242 open
 - [x] Set hostname to `iboukhss42`
-- [ ] Implement strong password policy (see below)
-- [ ] Install sudo following strict rules (see below)
+- [x] Implement strong password policy (see below)
+- [x] Install sudo following strict rules (see below)
 - [x] Create user `iboukhss`
 - [x] Add `iboukhss` to `user42` and `sudo` groups
 - [ ] Create `monitoring.sh` script (see below)
@@ -67,7 +67,7 @@ Then, retrieve the signature from the ".vdi" file (or ".qcow2 for UTM’users) o
 ## Installation steps
 
 - Get the latest [Debian stable ISO](https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.5.0-amd64-netinst.iso)
-- Set hostname, username, strong passwords
+- Set hostname, username
 - Setup LVM (guided partitioning with encryption)
 - Uncheck GUI packages, keep web server, ssh server and system utilities
 
@@ -76,6 +76,7 @@ Then, retrieve the signature from the ".vdi" file (or ".qcow2 for UTM’users) o
 ### Sudo
 
 ```console
+# Not needed if root password is disabled
 apt install sudo
 groupadd user42
 usermod -aG sudo,user42 iboukhss
@@ -85,12 +86,11 @@ For more info read `man 5 sudoers`
 ```console
 visudo
 
-# This is default
+# Should be default already
 Defaults	passwd_tries=3
 Defaults	badpass_messaage="hehe xd"
 Defaults	log_input,log_output
-# How to force this?
-Defaults	logfile="/var/log/sudo/sudo.log"
+Defaults	iolog_dir="/var/log/sudo/"
 Defaults	requiretty
 ```
 
@@ -100,14 +100,24 @@ For more info read `man 5 login.defs`
 ```console
 nano /etc/login.defs
 
+# Password aging controls
 PASS_MAX_DAYS	30
 PASS_MIN_DAYS	2
 PASS_WARN_AGE	7
 ```
 
-For more info read `man 7 pam`
+For more info read `man 5 pwquality.conf`
+```
+apt install libpam-pwquality
+nano /etc/pam.d/common-password
 
-
+password        requisite                       pam_pwquality.so minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 usercheck=1 difok=7 enforce_for_root
+```
 
 ## During defense
 
+AppArmor?  
+SSH working?  
+UFW?  
+Create new user and assign it to a group  
+Change passwords of user accounts  
