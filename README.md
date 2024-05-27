@@ -1,9 +1,11 @@
 # :seedling: Born2BeRoot
 
-## :clipboard: Checklist
+## Subject requirements
 
-- [ ] SSH service on port 4242 (disable root access)
-- [ ] Configure UFW to leave only port 4242 open
+### :clipboard: Checklist
+
+- [x] SSH service on port 4242 (disable root access)
+- [x] Configure UFW to leave only port 4242 open
 - [x] Set hostname to `iboukhss42`
 - [x] Implement strong password policy (see below)
 - [x] Install sudo following strict rules (see below)
@@ -12,7 +14,7 @@
 - [ ] Create `monitoring.sh` script (see below)
 - [ ] Turn in `signature.txt` (see below)
 
-## :lock: Strong password policy
+### :lock: Strong password policy
 
 - Your password has to expire every 30 days.
 - The minimum number of days allowed before the modification of a password will be set to 2.
@@ -22,7 +24,7 @@
 - The following rule does not apply to the root password: The password must have at least 7 characters that are not part of the former password.
 - Of course, your root password has to comply with this policy.
 
-## :shield: Strong sudo configuration
+### :shield: Strong sudo configuration
 
 - Authentication using sudo has to be limited to 3 attempts in the event of an incorrect password.
 - A custom message of your choice has to be displayed if an error due to a wrong password occurs when using sudo.
@@ -31,7 +33,7 @@
 - For security reasons too, the paths that can be used by sudo must be restricted.  
 Example: `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin`
 
-## :bar_chart: Monitoring script
+### :bar_chart: Monitoring script
 
 At server startup, the script will display some information (listed below) on all terminals every 10 minutes (take a look at wall). The banner is optional. No error must be visible.
 
@@ -50,7 +52,7 @@ Your script must always be able to display the following information:
 - The IPv4 address of your server and its MAC (Media Access Control) address.
 - The number of commands executed with the sudo program.
 
-## :memo: Signature file
+### :memo: Signature file
 
 You only have to turn in a `signature.txt` file at the root of your Git repository. You must paste in it the signature of your machine’s virtual disk. To get this signature, you first have to open the default installation folder (it is the folder where your VMs are saved):
 - Windows: `HOMEDRIVE%%HOMEPATH%\VirtualBox VMs\`
@@ -71,18 +73,19 @@ Then, retrieve the signature from the ".vdi" file (or ".qcow2 for UTM’users) o
 - Setup LVM (guided partitioning with encryption)
 - Uncheck GUI packages, keep web server, ssh server and system utilities
 
-## Post installation steps
+## Configuration steps
 
 ### Sudo
 
 ```console
-# Not needed if root password is disabled
-apt install sudo
+# A few useful utils for later
+apt install sudo libpam-pwquality ufw git build-essential
+
 groupadd user42
 usermod -aG sudo,user42 iboukhss
 ```
 
-For more info read `man 5 sudoers`
+For more info read `man sudoers`
 ```console
 visudo
 
@@ -92,11 +95,15 @@ Defaults	badpass_messaage="hehe xd"
 Defaults	log_input,log_output
 Defaults	iolog_dir="/var/log/sudo/"
 Defaults	requiretty
+
+# Secure path should already be set
+# I assume snap will never be installed on Debian
+Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ```
 
 ### Password policy
 
-For more info read `man 5 login.defs`
+For more info read `man login.defs`
 ```console
 nano /etc/login.defs
 
@@ -106,18 +113,37 @@ PASS_MIN_DAYS	2
 PASS_WARN_AGE	7
 ```
 
-For more info read `man 5 pwquality.conf`
-```
-apt install libpam-pwquality
+For more info read `man pwquality.conf`
+```console
 nano /etc/pam.d/common-password
 
 password        requisite                       pam_pwquality.so minlen=10 ucredit=-1 lcredit=-1 dcredit=-1 maxrepeat=3 usercheck=1 difok=7 enforce_for_root
 ```
 
+### SSH & UFW
+
+```console
+nano /etc/ssh/sshd_config
+
+# Add the following (port 22 will be disabled later)
+Port 4242
+PermitRootLogin=no
+```
+
+```console
+# Both should be default
+ufw default deny incoming
+ufw default allow outgoing
+
+# Even more granular control?
+ufw allow 4242/tcp
+ufw enable
+```
+
 ## During defense
 
-AppArmor?  
-SSH working?  
-UFW?  
-Create new user and assign it to a group  
-Change passwords of user accounts  
+- AppArmor
+- SSH working
+- UFW
+- Create new user and assign it to a group
+- Change passwords of user accounts
