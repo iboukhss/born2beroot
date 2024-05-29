@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# wall has no color support
 c1='\033[0;31m' # red
 c2='\033[0;34m' # blue
 nc='\033[0m'    # no color
@@ -15,6 +16,7 @@ ram_usage=$(free | grep ^Mem: | awk '{printf "%.f", ($3/$2)*100}')
 
 read -r disk_size disk_used disk_usage <<< $(df -h --total | grep ^total | awk '{print $2,$3,$5}')
 
+# Not the most accurate estimation
 cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2+$4}')
 boot_time=$(who -b | awk '{print $3,$4}')
 lvm_enabled=$(lvscan > /dev/null 2>&1 && echo "yes" || echo "no")
@@ -66,6 +68,8 @@ mapfile -t ascii <<'EOF'
               `"""
 EOF
 
+# Note: wall sends a message on all terminals and the message will wrap around
+# if it exceeds the terminal length (80 characters is common)
 {
 for i in "${!ascii[@]}"; do
 	printf "%-30s %s\n" "${ascii[i]}" "${info[i]}"
