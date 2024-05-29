@@ -4,6 +4,48 @@ c1='\033[0;31m' # red
 c2='\033[0;34m' # blue
 nc='\033[0m'    # no color
 
+arch=$(arch)
+kver=$(uname -r)
+socket_count=$(lscpu | grep "Socket(s):" | awk '{print $2}')
+cpu_count=$(lscpu | grep "^CPU(s):" | awk '{print $2}')
+
+read -r ram_size ram_used <<< $(free -h | grep ^Mem: | awk '{print $2,$3}')
+# Calculate percentage without floating point precision
+ram_usage=$(free | grep ^Mem: | awk '{printf "%.f", ($3/$2)*100}')
+
+read -r disk_size disk_used disk_usage <<< $(df -h --total | grep ^total | awk '{print $2,$3,$5}')
+
+cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2+$4}')
+boot_time=$(who -b | awk '{print $3,$4}')
+lvm_enabled=$(lvscan > /dev/null 2>&1 && echo "yes" || echo "no")
+
+# Substract one line for the table titles
+tcp_count=$(ss -ta state established | wc -l | awk '{print $1-1}')
+active_users=$(who -u | wc -l)
+
+# Find the default device?
+device=$(ip route | grep default | awk '{print $5}')
+ip_addr=$(ip -br addr show $device | awk '{print $3}')
+mac_addr=$(ip -br link show $device | awk '{print $3}')
+
+sudo_cmds=$(journalctl _COMM=sudo | grep COMMAND= | wc -l)
+
+mapfile -t info <<EOF
+architecture     ${arch}
+kernel           ${kver}
+cpus             ${socket_count}
+vcpus            ${cpu_count}
+ram usage        ${ram_used} / ${ram_size} (${ram_usage}%)
+disk usage       ${disk_used} / ${disk_size} (${disk_usage})
+cpu load         ${cpu_usage}%
+last reboot      ${boot_time}
+lvm active       ${lvm_enabled}
+tcp connections  ${tcp_count}
+users            ${active_users}
+ipv4             ${ip_addr} (${mac_addr})
+sudo             ${sudo_cmds}
+EOF
+
 mapfile -t ascii <<'EOF'
        _,met$$$$$gg.
     ,g$$$$$$$$$$$$$$$P.
@@ -24,44 +66,8 @@ mapfile -t ascii <<'EOF'
               `"""
 EOF
 
-mapfile -t labels <<'EOF'
-arch
-kernel
-cpus
-vcpus
-ram
-disk
-cpu
-last reboot
-lvm
-connections
-users
-ip
-sudo
-EOF
-
-device=$(ip route | grep default | awk '{print $5}')
-ip_addr=$(ip -br addr show $device | awk '{print $3}')
-mac_addr=$(ip -br link show $device | awk '{print $3}')
-
-mapfile -t info <<EOF
-$(arch)
-$(uname -r)
-$(lscpu | grep "Socket(s):" | awk '{print $2}')
-$(lscpu | grep "^CPU(s):" | awk '{print $2}')
-$(free -h | grep ^Mem: | awk '{printf "%s / %s (%.f%%)", $3, $2, ($3/$2)*100}')
-$(df -h --total | grep ^total | awk '{printf "%s / %s (%s)", $3, $2, $5}')
-$(top -bn1 | grep "Cpu(s)" | awk '{print $2+$4 "%"}')
-$(who -b | awk '{print $3, $4}')
-$(lvscan > /dev/null 2>&1 && echo "yes" || echo "no")
-$(netstat -a | grep ESTABLISHED | wc -l)
-$(who -u | wc -l)
-${ip_addr} (${mac_addr})
-$(journalctl _COMM=sudo | grep COMMAND= | wc -l)
-EOF
-
 {
 for i in "${!ascii[@]}"; do
-	printf "%-30s %-12s %s\n" "${ascii[i]}" "${labels[i]}" "${info[i]}"
+	printf "%-30s %s\n" "${ascii[i]}" "${info[i]}"
 done
 } | wall
